@@ -120,26 +120,26 @@ class ReportsAndAnalyticsController extends Controller
             ];
         });
 
-    // Recent Trips with date filter
-$tripsQuery = Dispatch::where('is_archived', false)
-    ->with(['driver', 'truck', 'tripDetails'])
-    ->whereHas('driver', function($query) {
-        $query->where('is_archived', false);
-    })
-    ->whereHas('truck', function($query) {
-        $query->where('is_archived', false);
-    });
-    
-if ($fromDate && $toDate) {
-    // Filter by trip delivery date instead of dispatch created_at
-    $tripsQuery->whereHas('tripDetails', function($query) use ($fromDate, $toDate) {
-        $query->whereBetween(DB::raw('DATE(delivery_date)'), [$fromDate, $toDate]);
-    });
-}
+    // Recent Trips with date filter - FIXED VERSION
+    $tripsQuery = Dispatch::where('is_archived', false)
+        ->with(['driver', 'truck', 'tripDetails'])
+        ->whereHas('driver', function($query) {
+            $query->where('is_archived', false);
+        })
+        ->whereHas('truck', function($query) {
+            $query->where('is_archived', false);
+        });
+        
+    if ($fromDate && $toDate) {
+        // Filter by trip delivery date instead of dispatch created_at
+        $tripsQuery->whereHas('tripDetails', function($query) use ($fromDate, $toDate) {
+            $query->whereBetween(DB::raw('DATE(delivery_date)'), [$fromDate, $toDate]);
+        });
+    }
 
-$recentTrips = $tripsQuery->orderBy('dispatch_id', 'desc')
-    ->limit(5)
-    ->get()
+    $recentTrips = $tripsQuery->orderBy('dispatch_id', 'desc')
+        ->limit(5)
+        ->get()
         ->map(function($dispatch) {
             $driver = $dispatch->driver;
             $truck = $dispatch->truck;
