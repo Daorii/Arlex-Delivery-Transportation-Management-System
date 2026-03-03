@@ -596,14 +596,12 @@ private function uploadArchivedSoaCopy(Billing $billing): void
         Storage::disk('s3')->put($pdfKey, $dompdf->output(), [
             'ContentType' => 'application/pdf',
         ]);
-        Storage::disk('s3')->delete($htmlKey);
         return;
     }
 
     Storage::disk('s3')->put($htmlKey, $html, [
         'ContentType' => 'text/html; charset=UTF-8',
     ]);
-    Storage::disk('s3')->delete($pdfKey);
 }
 
 private function getArchivedSoaUrl(int $billingId): ?string
