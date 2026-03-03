@@ -22,17 +22,12 @@ RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
 
 WORKDIR /app
 
-# Install PHP dependencies first for layer caching
-COPY composer.json composer.lock ./
-RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
-
-# Install JS dependencies and build frontend assets
-COPY package.json package-lock.json ./
-RUN npm ci
-
-# Copy app source and build
+# Copy full source before composer scripts that require artisan
 COPY . .
-RUN npm run build && npm prune --omit=dev
+
+# Install dependencies and build frontend assets
+RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+RUN npm ci && npm run build && npm prune --omit=dev
 
 # Ensure runtime writable paths
 RUN chown -R www-data:www-data storage bootstrap/cache
