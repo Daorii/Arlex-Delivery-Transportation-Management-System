@@ -178,6 +178,20 @@
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm space-x-2">
                                             <div class="flex space-x-2">
+                                                @if(!empty($billing['soa_archive_url']))
+                                                <a 
+                                                    href="{{ $billing['soa_archive_url'] }}"
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    class="text-blue-600 hover:text-blue-900 transition-colors"
+                                                    title="View Archived SOA Copy">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.27 2.943 9.542 7-1.272 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                                    </svg>
+                                                </a>
+                                                @endif
+
                                                 <!-- Restore Button -->
                                                 <button 
                                                     @click="selectedBilling = { id: {{ $billing['billing_id'] }}, client: '{{ $billing['client_name'] }}' }; showRestoreModal = true"

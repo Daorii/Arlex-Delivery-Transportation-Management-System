@@ -9,6 +9,7 @@ use App\Models\TripDetail;
 use App\Models\SipaDetail;
 use App\Models\Billing;   
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 
 class BillingController extends Controller
@@ -492,6 +493,7 @@ public function archived()
                 'checked_by' => $billing->checked_by,
                 'total_amount' => $billing->total_amount,
                 'status' => ucfirst($billing->status),
+                'soa_archive_url' => $this->getArchivedSoaUrl((int) $billing->billing_id),
             ];
         });
 
@@ -505,6 +507,10 @@ public function archive($id)
 {
     try {
         $billing = Billing::findOrFail($id);
+
+        // Create an archive copy of SOA and upload to S3 before flagging as archived.
+        $this->uploadArchivedSoaCopy($billing);
+
         $billing->is_archived = true;
         $billing->save();
 
@@ -522,6 +528,106 @@ public function archive($id)
             'success' => false,
             'message' => 'Error archiving billing: ' . $e->getMessage()
         ], 500);
+    }
+}
+
+private function buildSoaData(Billing $billing): array
+{
+    $sipa = DB::table('siparequest')->where('sipa_id', $billing->sipa_id)->first();
+
+    $dispatchIds = Dispatch::where('sipa_id', $billing->sipa_id)
+        ->pluck('dispatch_id');
+
+    $tripDetails = TripDetail::whereIn('dispatch_id', $dispatchIds)
+        ->where('is_verified', 1)
+        ->orderBy('delivery_date', 'asc')
+        ->get();
+
+    $soaItems = [];
+
+    foreach ($tripDetails as $trip) {
+        $sipaDetail = SipaDetail::where('sipa_detail_id', $trip->sipa_detail_id)->first();
+        $amount = $sipaDetail ? (float) $sipaDetail->price : 0;
+
+        $soaItems[] = [
+            'delivery_date' => Carbon::parse($trip->delivery_date)->format('n/j/Y'),
+            'container_no' => $trip->container_no,
+            'eir_no' => $trip->eir_no,
+            'size' => $sipaDetail ? $sipaDetail->size : 'N/A',
+            'destination' => $sipaDetail ? ($sipaDetail->route_to ?? 'N/A') : 'N/A',
+            'amount' => number_format($amount, 2),
+            'remarks' => 'MT',
+        ];
+    }
+
+    return [
+        'billing_id' => $billing->billing_id,
+        'soa_number' => date('y') . '-' . date('m'),
+        'date' => Carbon::parse($billing->created_at)->format('n/j/Y'),
+        'client_name' => $billing->client->company_name ?? 'N/A',
+        'client_address' => $billing->client->address ?? 'N/A',
+        'sipa_ref_no' => $sipa->sipa_ref_no ?? 'N/A',
+        'week_period' => $billing->week_period_text,
+        'prepared_by' => $billing->prepared_by,
+        'checked_by' => $billing->checked_by,
+        'total_amount' => number_format((float) $billing->total_amount, 2),
+        'status' => $billing->status,
+        'items' => $soaItems,
+    ];
+}
+
+private function uploadArchivedSoaCopy(Billing $billing): void
+{
+    $soaData = $this->buildSoaData($billing->loadMissing('client'));
+    $html = view('billing.soa_archive', ['soa' => $soaData])->render();
+
+    // Keep deterministic key so archived list can always find latest copy.
+    $baseKey = 'soa-archives/billing-' . $billing->billing_id;
+    $pdfKey = $baseKey . '.pdf';
+    $htmlKey = $baseKey . '.html';
+
+    // Prefer PDF when Dompdf is available; fallback to HTML snapshot.
+    if (class_exists(\Dompdf\Dompdf::class)) {
+        $dompdf = new \Dompdf\Dompdf();
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        Storage::disk('s3')->put($pdfKey, $dompdf->output(), [
+            'ContentType' => 'application/pdf',
+        ]);
+        Storage::disk('s3')->delete($htmlKey);
+        return;
+    }
+
+    Storage::disk('s3')->put($htmlKey, $html, [
+        'ContentType' => 'text/html; charset=UTF-8',
+    ]);
+    Storage::disk('s3')->delete($pdfKey);
+}
+
+private function getArchivedSoaUrl(int $billingId): ?string
+{
+    $pdfKey = 'soa-archives/billing-' . $billingId . '.pdf';
+    $htmlKey = 'soa-archives/billing-' . $billingId . '.html';
+    $disk = Storage::disk('s3');
+
+    $key = null;
+    if ($disk->exists($pdfKey)) {
+        $key = $pdfKey;
+    } elseif ($disk->exists($htmlKey)) {
+        $key = $htmlKey;
+    }
+
+    if (! $key) {
+        return null;
+    }
+
+    try {
+        return $disk->temporaryUrl($key, now()->addHours(4));
+    } catch (\Throwable $e) {
+        // Fallback for drivers that do not support temporary URLs.
+        return $disk->url($key);
     }
 }
 
