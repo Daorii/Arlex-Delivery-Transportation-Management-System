@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Dispatch;
-use App\Models\Sipadetail;
+use App\Models\SipaDetail;
 use App\Models\Driver;
 use App\Models\Truck;
 use App\Models\TripDetail;
@@ -70,7 +70,7 @@ class DriverDispatchController extends Controller
             $truck = Truck::where('truck_id', $dispatch->truck_id)->first();
 
             // Get SIPA details (route info)
-            $sipaDetail = Sipadetail::where('sipa_id', $dispatch->sipa_id)->first();
+            $sipaDetail = SipaDetail::where('sipa_id', $dispatch->sipa_id)->first();
             $type = Sipa::where('sipa_id', $dispatch->sipa_id)->value('type');
             
             // Calculate trip statistics
@@ -109,3 +109,4 @@ class DriverDispatchController extends Controller
         ]);
     }
 }
+

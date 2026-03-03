@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Dispatch;
-use App\Models\Sipadetail;
+use App\Models\SipaDetail;
 use App\Models\Driver;
 use App\Models\Truck;
 use App\Models\TripDetail;
@@ -31,8 +31,8 @@ class DriverTripController extends Controller
     $truck = Truck::where('truck_id', $dispatch->truck_id)->first();
     $sipa = $dispatch->sipa;
 
-    $sipaDetails = Sipadetail::where('sipa_id', $dispatch->sipa_id)->get();
-    $sipaDetail = Sipadetail::where('sipa_id', $dispatch->sipa_id)->first();
+    $sipaDetails = SipaDetail::where('sipa_id', $dispatch->sipa_id)->get();
+    $sipaDetail = SipaDetail::where('sipa_id', $dispatch->sipa_id)->first();
     
     // Search and pagination
     $search = $request->get('search');
@@ -86,7 +86,7 @@ class DriverTripController extends Controller
     }
 
     // NEW: Check if the SIPA detail has expired
-    $sipaDetail = Sipadetail::where('sipa_detail_id', $validated['sipa_detail_id'])->first();
+    $sipaDetail = SipaDetail::where('sipa_detail_id', $validated['sipa_detail_id'])->first();
     
     if ($sipaDetail && $sipaDetail->effectivity_to && now()->gt($sipaDetail->effectivity_to)) {
         return redirect()->route('driver.trip.details', ['dispatch_id' => $validated['dispatch_id']])
@@ -109,3 +109,4 @@ class DriverTripController extends Controller
 }
 
 }
+

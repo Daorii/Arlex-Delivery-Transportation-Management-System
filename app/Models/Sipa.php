@@ -24,7 +24,7 @@ class Sipa extends Model
 
     public function details()
     {
-        return $this->hasMany(Sipadetail::class, 'sipa_id', 'sipa_id');
+        return $this->hasMany(SipaDetail::class, 'sipa_id', 'sipa_id');
     }
 
     public function dispatches()

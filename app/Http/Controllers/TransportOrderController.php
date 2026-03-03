@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\Dispatch;
 use App\Models\TripDetail;
-use App\Models\Sipadetail;
+use App\Models\SipaDetail;
 
 class TransportOrderController extends Controller
 {
@@ -223,7 +223,7 @@ public function searchSoa(Request $request)
             $groupedTrips = [];
             
             foreach ($tripDetails as $trip) {
-                $sipaDetail = Sipadetail::where('sipa_detail_id', $trip->sipa_detail_id)->first();
+                $sipaDetail = SipaDetail::where('sipa_detail_id', $trip->sipa_detail_id)->first();
                 
                 if (!$sipaDetail) continue;
 
@@ -357,3 +357,4 @@ foreach ($validated['items'] as $item) {
     }
 }
 }
+

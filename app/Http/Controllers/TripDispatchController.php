@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Client;
 use App\Models\Dispatch;
 use App\Models\TripDetail;
-use App\Models\Sipadetail;
+use App\Models\SipaDetail;
 use App\Models\Driver;
 use App\Models\Truck;
 use Illuminate\Http\Request;
@@ -41,7 +41,7 @@ $dispatches = Dispatch::whereIn('sipa_id', $sipaIds)
                     ->get()
                     ->map(function($trip) {
                         // Get SIPA detail for size, type, price
-                        $sipaDetail = Sipadetail::where('sipa_detail_id', $trip->sipa_detail_id)->first();
+                        $sipaDetail = SipaDetail::where('sipa_detail_id', $trip->sipa_detail_id)->first();
 
                         $sipa = $sipaDetail ? $sipaDetail->sipa : null;
                         
@@ -102,7 +102,7 @@ $dispatches = Dispatch::whereIn('sipa_id', $sipaIds)
             
             // Update price in sipa_detail if it exists
             if (isset($eir['sipa_detail_id']) && isset($eir['price'])) {
-                $sipaDetail = Sipadetail::where('sipa_detail_id', $eir['sipa_detail_id'])->first();
+                $sipaDetail = SipaDetail::where('sipa_detail_id', $eir['sipa_detail_id'])->first();
                 if ($sipaDetail) {
                     $sipaDetail->price = $eir['price'];
                     $sipaDetail->size = $eir['size'];
@@ -112,7 +112,7 @@ $dispatches = Dispatch::whereIn('sipa_id', $sipaIds)
             
             // Update type in sipa if it exists
             if (isset($eir['sipa_detail_id']) && isset($eir['type'])) {
-                $sipaDetail = Sipadetail::where('sipa_detail_id', $eir['sipa_detail_id'])->first();
+                $sipaDetail = SipaDetail::where('sipa_detail_id', $eir['sipa_detail_id'])->first();
                 if ($sipaDetail && $sipaDetail->sipa) {
                     $sipaDetail->sipa->type = $eir['type'];
                     $sipaDetail->sipa->save();
@@ -242,7 +242,7 @@ public function archived($clientId)
             $tripDetails = TripDetail::where('dispatch_id', $dispatch->dispatch_id)
                 ->get()
                 ->map(function($trip) {
-                    $sipaDetail = Sipadetail::where('sipa_detail_id', $trip->sipa_detail_id)->first();
+                    $sipaDetail = SipaDetail::where('sipa_detail_id', $trip->sipa_detail_id)->first();
                     $sipa = $sipaDetail ? $sipaDetail->sipa : null;
                     
                     return [
@@ -273,3 +273,4 @@ public function archived($clientId)
 }
 
 }
+

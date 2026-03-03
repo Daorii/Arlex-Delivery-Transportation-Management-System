@@ -2,7 +2,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\SIPARequestController;
-use App\Http\Controllers\SipadetailController;
+use App\Http\Controllers\SipaDetailController;
 use App\Http\Controllers\DriverController;
 use App\Http\Controllers\TruckController;
 use App\Http\Controllers\DispatchController;
@@ -76,11 +76,11 @@ Route::middleware(['admin.auth'])->group(function () {
     Route::delete('/sipa-requests/{id}', [SIPARequestController::class, 'destroy'])->name('sipa.destroy');
     
     // SIPA Details
-    Route::resource('sipadetails', SipadetailController::class);
-    Route::get('/sipadetails/{sipaId}', [SipadetailController::class, 'show']);
-    Route::put('/sipadetails/{rate}', [SipadetailController::class, 'update']);
-    Route::put('/sipadetails/{sipadetail}', [SipadetailController::class, 'update']);
-    Route::delete('/sipadetails/{sipadetail}', [SipadetailController::class, 'destroy']);
+    Route::resource('sipadetails', SipaDetailController::class);
+    Route::get('/sipadetails/{sipaId}', [SipaDetailController::class, 'show']);
+    Route::put('/sipadetails/{rate}', [SipaDetailController::class, 'update']);
+    Route::put('/sipadetails/{sipadetail}', [SipaDetailController::class, 'update']);
+    Route::delete('/sipadetails/{sipadetail}', [SipaDetailController::class, 'destroy']);
     
     // Dispatches
     Route::post('/dispatch', [DispatchController::class, 'store']);

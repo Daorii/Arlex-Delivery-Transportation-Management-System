@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Sipadetail;
+use App\Models\SipaDetail;
 
-class SipadetailController extends Controller
+class SipaDetailController extends Controller
 {
     /**
      * Get all rates for a specific SIPA request.
@@ -13,7 +13,7 @@ class SipadetailController extends Controller
      */
     public function index($sipa_id)
     {
-        $rates = Sipadetail::where('sipa_id', $sipa_id)
+        $rates = SipaDetail::where('sipa_id', $sipa_id)
             ->orderBy('sipa_detail_id', 'desc')
             ->get();
 
@@ -37,7 +37,7 @@ class SipadetailController extends Controller
     ]);
 
     // Check if the latest rate is expired (ONLY blocks new additions)
-    $latestRate = Sipadetail::where('sipa_id', $request->sipa_id)
+    $latestRate = SipaDetail::where('sipa_id', $request->sipa_id)
         ->orderBy('effectivity_to', 'desc')
         ->first();
 
@@ -48,7 +48,7 @@ class SipadetailController extends Controller
         ], 422);
     }
 
-    $rate = Sipadetail::create($request->only([
+    $rate = SipaDetail::create($request->only([
         'sipa_id', 'size', 'volume', 'price', 'route_from', 'route_to', 'effectivity_from', 'effectivity_to'
     ]));
 
@@ -60,13 +60,13 @@ class SipadetailController extends Controller
 
         public function show($sipaId)
     {
-        return Sipadetail::where('sipa_id', $sipaId)->get();
+        return SipaDetail::where('sipa_id', $sipaId)->get();
     }
     /**
      * Update an existing rate.
      * Uses route-model binding for $rate.
      */
-    public function update(Request $request, Sipadetail $sipadetail)
+    public function update(Request $request, SipaDetail $sipadetail)
 {
     $request->validate([
         'size' => 'required|string',
@@ -79,7 +79,7 @@ class SipadetailController extends Controller
     ]);
 
     // Check if the latest rate is expired (ONLY blocks edits)
-    $latestRate = Sipadetail::where('sipa_id', $sipadetail->sipa_id)
+    $latestRate = SipaDetail::where('sipa_id', $sipadetail->sipa_id)
         ->orderBy('effectivity_to', 'desc')
         ->first();
 
@@ -103,7 +103,7 @@ class SipadetailController extends Controller
 }
     public function destroy($id)
 {
-    $rate = Sipadetail::findOrFail($id);
+    $rate = SipaDetail::findOrFail($id);
     $rate->delete();
 
     return response()->json([
@@ -113,3 +113,5 @@ class SipadetailController extends Controller
     
 }
 }
+
+

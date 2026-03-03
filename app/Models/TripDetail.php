@@ -34,7 +34,7 @@ class TripDetail extends Model
 
     public function sipaDetail()
     {
-        return $this->belongsTo(Sipadetail::class, 'sipa_detail_id', 'sipa_detail_id');
+        return $this->belongsTo(SipaDetail::class, 'sipa_detail_id', 'sipa_detail_id');
     }
 
     

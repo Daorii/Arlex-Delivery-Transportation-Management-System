@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use App\Models\Sipadetail;
+use App\Models\SipaDetail;
 use App\Models\SipaRequest;
 
 class SIPARequestController extends Controller
@@ -41,7 +41,7 @@ class SIPARequestController extends Controller
     // Get total count for statistics
     $totalRequests = DB::table('clients')->count();
 
-    $sipaDetails = Sipadetail::orderBy('sipa_detail_id', 'desc')->get();
+    $sipaDetails = SipaDetail::orderBy('sipa_detail_id', 'desc')->get();
 
     return view('CIS.SIPARequest', [
         'sipaDetails' => $sipaDetails,
@@ -168,3 +168,4 @@ public function destroy($id)
     return redirect()->back()->with('success', 'SIPA request permanently deleted!');
 }
 }
+

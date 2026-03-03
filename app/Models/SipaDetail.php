@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Sipadetail extends Model
+class SipaDetail extends Model
 {
     protected $table = 'sipadetails';
     protected $primaryKey = 'sipa_detail_id';

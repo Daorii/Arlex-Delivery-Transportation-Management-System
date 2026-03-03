@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Client;
 use App\Models\Dispatch;
 use App\Models\TripDetail;
-use App\Models\Sipadetail;
+use App\Models\SipaDetail;
 use App\Models\Billing;   
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -181,7 +181,7 @@ class BillingController extends Controller
         $totalAmount = 0;
 
         foreach ($tripDetails as $trip) {
-            $sipaDetail = Sipadetail::where('sipa_detail_id', $trip->sipa_detail_id)->first();
+            $sipaDetail = SipaDetail::where('sipa_detail_id', $trip->sipa_detail_id)->first();
             
             $amount = $sipaDetail ? (float)$sipaDetail->price : 0;
             $totalAmount += $amount;
@@ -358,7 +358,7 @@ public function view($billingId)
         // Build SOA items with pricing
         $soaItems = [];
         foreach ($tripDetails as $trip) {
-            $sipaDetail = Sipadetail::where('sipa_detail_id', $trip->sipa_detail_id)->first();
+            $sipaDetail = SipaDetail::where('sipa_detail_id', $trip->sipa_detail_id)->first();
             
             $amount = $sipaDetail ? (float)$sipaDetail->price : 0;
 
@@ -575,3 +575,4 @@ public function destroyBilling($id)
 }
 
 }
+

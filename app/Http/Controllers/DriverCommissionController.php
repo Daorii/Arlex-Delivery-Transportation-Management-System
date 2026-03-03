@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Driver;
 use App\Models\Dispatch;
 use App\Models\TripDetail;
-use App\Models\Sipadetail;
+use App\Models\SipaDetail;
 use App\Models\DriverCommission;
 
 class DriverCommissionController extends Controller
@@ -30,7 +30,7 @@ class DriverCommissionController extends Controller
             ->whereNotIn('dispatch_id', $savedCommissionDispatchIds) // Exclude already saved
             ->get()
                 ->map(function ($trip) {
-                    $sipaDetail = Sipadetail::find($trip->sipa_detail_id);
+                    $sipaDetail = SipaDetail::find($trip->sipa_detail_id);
                     $sipa = $sipaDetail->sipa ?? null;
 
                     return [
@@ -144,7 +144,7 @@ public function getClientDrivers($clientId)
             ->whereBetween('delivery_date', [$from, $to])
             ->get()
             ->map(function ($trip) {
-                $sipaDetail = Sipadetail::find($trip->sipa_detail_id);
+                $sipaDetail = SipaDetail::find($trip->sipa_detail_id);
                 $sipa = $sipaDetail->sipa ?? null;
 
                 return [
@@ -385,7 +385,7 @@ public function getDriverWeeklyPeriods($driverId)
                 ];
             }
             
-            $sipaDetail = Sipadetail::find($trip->sipa_detail_id);
+            $sipaDetail = SipaDetail::find($trip->sipa_detail_id);
             $sipa = $sipaDetail->sipa ?? null;
             $price = $sipaDetail->price ?? 0;
             
@@ -422,3 +422,5 @@ public function getDriverWeeklyPeriods($driverId)
 }
 
 }
+
+
