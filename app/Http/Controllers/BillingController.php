@@ -508,15 +508,25 @@ public function archive($id)
     try {
         $billing = Billing::findOrFail($id);
 
-        // Create an archive copy of SOA and upload to S3 before flagging as archived.
-        $this->uploadArchivedSoaCopy($billing);
+        $archiveUploadWarning = null;
+
+        // Best-effort S3 upload; do not block archive action if S3 is temporarily unavailable.
+        try {
+            $this->uploadArchivedSoaCopy($billing);
+        } catch (\Throwable $uploadError) {
+            $archiveUploadWarning = 'Archived in database, but SOA copy upload failed.';
+            \Log::warning('SOA archive upload failed', [
+                'billing_id' => $id,
+                'error' => $uploadError->getMessage(),
+            ]);
+        }
 
         $billing->is_archived = true;
         $billing->save();
 
         return response()->json([
             'success' => true,
-            'message' => 'Billing archived successfully!'
+            'message' => $archiveUploadWarning ?: 'Billing archived successfully!'
         ]);
     } catch (\Exception $e) {
         \Log::error('Error archiving billing', [
