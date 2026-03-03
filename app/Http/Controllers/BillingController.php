@@ -485,6 +485,16 @@ public function archived()
         ->where('is_archived', true)
         ->get()
         ->map(function ($billing) {
+            $soaArchiveUrl = null;
+            try {
+                $soaArchiveUrl = $this->getArchivedSoaUrl((int) $billing->billing_id);
+            } catch (\Throwable $e) {
+                \Log::warning('Unable to resolve archived SOA URL', [
+                    'billing_id' => $billing->billing_id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
             return [
                 'billing_id' => $billing->billing_id,
                 'client_name' => $billing->client->company_name ?? 'N/A',
@@ -493,7 +503,7 @@ public function archived()
                 'checked_by' => $billing->checked_by,
                 'total_amount' => $billing->total_amount,
                 'status' => ucfirst($billing->status),
-                'soa_archive_url' => $this->getArchivedSoaUrl((int) $billing->billing_id),
+                'soa_archive_url' => $soaArchiveUrl,
             ];
         });
 
@@ -616,26 +626,44 @@ private function uploadArchivedSoaCopy(Billing $billing): void
 
 private function getArchivedSoaUrl(int $billingId): ?string
 {
-    $pdfKey = 'soa-archives/billing-' . $billingId . '.pdf';
-    $htmlKey = 'soa-archives/billing-' . $billingId . '.html';
-    $disk = Storage::disk('s3');
-
-    $key = null;
-    if ($disk->exists($pdfKey)) {
-        $key = $pdfKey;
-    } elseif ($disk->exists($htmlKey)) {
-        $key = $htmlKey;
-    }
-
-    if (! $key) {
-        return null;
-    }
-
     try {
+        $pdfKey = 'soa-archives/billing-' . $billingId . '.pdf';
+        $htmlKey = 'soa-archives/billing-' . $billingId . '.html';
+        $disk = Storage::disk('s3');
+
+        $key = null;
+        if ($disk->exists($pdfKey)) {
+            $key = $pdfKey;
+        } elseif ($disk->exists($htmlKey)) {
+            $key = $htmlKey;
+        }
+
+        if (! $key) {
+            return null;
+        }
+
         return $disk->temporaryUrl($key, now()->addHours(4));
     } catch (\Throwable $e) {
-        // Fallback for drivers that do not support temporary URLs.
-        return $disk->url($key);
+        // Fallback for drivers that do not support temporary URLs, or return null if storage is unreachable.
+        try {
+            $disk = Storage::disk('s3');
+            $pdfKey = 'soa-archives/billing-' . $billingId . '.pdf';
+            $htmlKey = 'soa-archives/billing-' . $billingId . '.html';
+
+            if ($disk->exists($pdfKey)) {
+                return $disk->url($pdfKey);
+            }
+            if ($disk->exists($htmlKey)) {
+                return $disk->url($htmlKey);
+            }
+        } catch (\Throwable $inner) {
+            \Log::warning('S3 lookup failed while resolving archived SOA URL', [
+                'billing_id' => $billingId,
+                'error' => $inner->getMessage(),
+            ]);
+        }
+
+        return null;
     }
 }
 
