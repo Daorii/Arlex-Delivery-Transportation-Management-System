@@ -599,7 +599,12 @@ private function buildSoaData(Billing $billing): array
 private function uploadArchivedSoaCopy(Billing $billing): void
 {
     $soaData = $this->buildSoaData($billing->loadMissing('client'));
-    $html = view('billing.soa_archive', ['soa' => $soaData])->render();
+    $html = (string) view('billing.soa_archive', ['soa' => $soaData])->render();
+    // Normalize to valid UTF-8 and drop invalid bytes that can break some adapters.
+    $normalized = @iconv('UTF-8', 'UTF-8//IGNORE', $html);
+    if (is_string($normalized) && $normalized !== '') {
+        $html = $normalized;
+    }
 
     // Keep deterministic key so archived list can always find latest copy.
     $baseKey = 'soa-archives/billing-' . $billing->billing_id;
@@ -653,6 +658,7 @@ private function uploadArchivedSoaCopy(Billing $billing): void
         'endpoint' => $s3Config['endpoint'] ?? env('AWS_ENDPOINT'),
         'use_path_style_endpoint' => $s3Config['use_path_style_endpoint'] ?? env('AWS_USE_PATH_STYLE_ENDPOINT'),
         'key' => $htmlKey,
+        'html_bytes' => strlen($html),
     ]);
 
     $uploaded = Storage::disk('s3')->put($htmlKey, $html, [
@@ -681,8 +687,8 @@ private function getArchivedSoaUrl(int $billingId): ?string
     $pdfKey = 'soa-archives/billing-' . $billingId . '.pdf';
     $htmlKey = 'soa-archives/billing-' . $billingId . '.html';
 
-    // Prefer PDF link when available; fallback to HTML archive copy.
-    foreach ([$pdfKey, $htmlKey] as $key) {
+    // Dompdf is unavailable in production now, so prefer HTML first.
+    foreach ([$htmlKey, $pdfKey] as $key) {
         try {
             \Log::info('Attempting S3 temporary URL generation', [
                 'billing_id' => $billingId,
