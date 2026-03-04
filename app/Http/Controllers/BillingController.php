@@ -630,6 +630,13 @@ private function uploadArchivedSoaCopy(Billing $billing): void
         if (! $uploaded) {
             throw new \RuntimeException('S3 put returned false for key: ' . $pdfKey);
         }
+        try {
+            Storage::disk('s3')->size($pdfKey);
+        } catch (\Throwable $verifyError) {
+            throw new \RuntimeException(
+                'S3 put reported success but object is not readable for key: ' . $pdfKey . ' | ' . $verifyError->getMessage()
+            );
+        }
 
         \Log::info('S3 SOA PDF upload success', [
             'billing_id' => $billing->billing_id,
@@ -653,6 +660,13 @@ private function uploadArchivedSoaCopy(Billing $billing): void
     ]);
     if (! $uploaded) {
         throw new \RuntimeException('S3 put returned false for key: ' . $htmlKey);
+    }
+    try {
+        Storage::disk('s3')->size($htmlKey);
+    } catch (\Throwable $verifyError) {
+        throw new \RuntimeException(
+            'S3 put reported success but object is not readable for key: ' . $htmlKey . ' | ' . $verifyError->getMessage()
+        );
     }
 
     \Log::info('S3 SOA HTML upload success', [
