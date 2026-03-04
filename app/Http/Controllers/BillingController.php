@@ -624,9 +624,12 @@ private function uploadArchivedSoaCopy(Billing $billing): void
             'key' => $pdfKey,
         ]);
 
-        Storage::disk('s3')->put($pdfKey, $dompdf->output(), [
+        $uploaded = Storage::disk('s3')->put($pdfKey, $dompdf->output(), [
             'ContentType' => 'application/pdf',
         ]);
+        if (! $uploaded) {
+            throw new \RuntimeException('S3 put returned false for key: ' . $pdfKey);
+        }
 
         \Log::info('S3 SOA PDF upload success', [
             'billing_id' => $billing->billing_id,
@@ -645,9 +648,12 @@ private function uploadArchivedSoaCopy(Billing $billing): void
         'key' => $htmlKey,
     ]);
 
-    Storage::disk('s3')->put($htmlKey, $html, [
+    $uploaded = Storage::disk('s3')->put($htmlKey, $html, [
         'ContentType' => 'text/html; charset=UTF-8',
     ]);
+    if (! $uploaded) {
+        throw new \RuntimeException('S3 put returned false for key: ' . $htmlKey);
+    }
 
     \Log::info('S3 SOA HTML upload success', [
         'billing_id' => $billing->billing_id,
