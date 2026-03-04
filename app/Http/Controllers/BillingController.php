@@ -626,45 +626,25 @@ private function uploadArchivedSoaCopy(Billing $billing): void
 
 private function getArchivedSoaUrl(int $billingId): ?string
 {
-    try {
-        $pdfKey = 'soa-archives/billing-' . $billingId . '.pdf';
-        $htmlKey = 'soa-archives/billing-' . $billingId . '.html';
-        $disk = Storage::disk('s3');
+    $disk = Storage::disk('s3');
+    $pdfKey = 'soa-archives/billing-' . $billingId . '.pdf';
+    $htmlKey = 'soa-archives/billing-' . $billingId . '.html';
 
-        $key = null;
-        if ($disk->exists($pdfKey)) {
-            $key = $pdfKey;
-        } elseif ($disk->exists($htmlKey)) {
-            $key = $htmlKey;
-        }
-
-        if (! $key) {
-            return null;
-        }
-
-        return $disk->temporaryUrl($key, now()->addHours(4));
-    } catch (\Throwable $e) {
-        // Fallback for drivers that do not support temporary URLs, or return null if storage is unreachable.
+    // Prefer PDF link when available; fallback to HTML archive copy.
+    foreach ([$pdfKey, $htmlKey] as $key) {
         try {
-            $disk = Storage::disk('s3');
-            $pdfKey = 'soa-archives/billing-' . $billingId . '.pdf';
-            $htmlKey = 'soa-archives/billing-' . $billingId . '.html';
-
-            if ($disk->exists($pdfKey)) {
-                return $disk->url($pdfKey);
-            }
-            if ($disk->exists($htmlKey)) {
-                return $disk->url($htmlKey);
-            }
-        } catch (\Throwable $inner) {
-            \Log::warning('S3 lookup failed while resolving archived SOA URL', [
-                'billing_id' => $billingId,
-                'error' => $inner->getMessage(),
-            ]);
+            return $disk->temporaryUrl($key, now()->addHours(4));
+        } catch (\Throwable $e) {
+            // Try next candidate key.
         }
-
-        return null;
     }
+
+    \Log::warning('S3 lookup failed while resolving archived SOA URL', [
+        'billing_id' => $billingId,
+        'error' => 'No accessible archive object found for billing record.',
+    ]);
+
+    return null;
 }
 
 // Restore billing
