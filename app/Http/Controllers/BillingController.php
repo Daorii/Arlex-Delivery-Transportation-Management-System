@@ -605,6 +605,7 @@ private function uploadArchivedSoaCopy(Billing $billing): void
     $baseKey = 'soa-archives/billing-' . $billing->billing_id;
     $pdfKey = $baseKey . '.pdf';
     $htmlKey = $baseKey . '.html';
+    $s3Config = config('filesystems.disks.s3', []);
 
     // Prefer PDF when Dompdf is available; fallback to HTML snapshot.
     if (class_exists(\Dompdf\Dompdf::class)) {
@@ -613,14 +614,44 @@ private function uploadArchivedSoaCopy(Billing $billing): void
         $dompdf->setPaper('A4', 'portrait');
         $dompdf->render();
 
+        \Log::info('Attempting S3 SOA PDF upload', [
+            'billing_id' => $billing->billing_id,
+            'disk' => 's3',
+            'bucket' => $s3Config['bucket'] ?? env('AWS_BUCKET'),
+            'region' => $s3Config['region'] ?? env('AWS_DEFAULT_REGION'),
+            'endpoint' => $s3Config['endpoint'] ?? env('AWS_ENDPOINT'),
+            'use_path_style_endpoint' => $s3Config['use_path_style_endpoint'] ?? env('AWS_USE_PATH_STYLE_ENDPOINT'),
+            'key' => $pdfKey,
+        ]);
+
         Storage::disk('s3')->put($pdfKey, $dompdf->output(), [
             'ContentType' => 'application/pdf',
+        ]);
+
+        \Log::info('S3 SOA PDF upload success', [
+            'billing_id' => $billing->billing_id,
+            'key' => $pdfKey,
         ]);
         return;
     }
 
+    \Log::info('Attempting S3 SOA HTML upload (Dompdf unavailable)', [
+        'billing_id' => $billing->billing_id,
+        'disk' => 's3',
+        'bucket' => $s3Config['bucket'] ?? env('AWS_BUCKET'),
+        'region' => $s3Config['region'] ?? env('AWS_DEFAULT_REGION'),
+        'endpoint' => $s3Config['endpoint'] ?? env('AWS_ENDPOINT'),
+        'use_path_style_endpoint' => $s3Config['use_path_style_endpoint'] ?? env('AWS_USE_PATH_STYLE_ENDPOINT'),
+        'key' => $htmlKey,
+    ]);
+
     Storage::disk('s3')->put($htmlKey, $html, [
         'ContentType' => 'text/html; charset=UTF-8',
+    ]);
+
+    \Log::info('S3 SOA HTML upload success', [
+        'billing_id' => $billing->billing_id,
+        'key' => $htmlKey,
     ]);
 }
 
@@ -633,9 +664,17 @@ private function getArchivedSoaUrl(int $billingId): ?string
     // Prefer PDF link when available; fallback to HTML archive copy.
     foreach ([$pdfKey, $htmlKey] as $key) {
         try {
+            \Log::info('Attempting S3 temporary URL generation', [
+                'billing_id' => $billingId,
+                'key' => $key,
+            ]);
             return $disk->temporaryUrl($key, now()->addHours(4));
         } catch (\Throwable $e) {
-            // Try next candidate key.
+            \Log::warning('S3 temporary URL generation failed for key', [
+                'billing_id' => $billingId,
+                'key' => $key,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 
